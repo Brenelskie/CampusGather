@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Discover events · CampusGather{% endblock %}
+{% block content %}
+  <section class="discover-hero" aria-labelledby="page-title">
+    <div class="hero-copy"><p class="eyebrow">The campus noticeboard</p><h1 id="page-title">Make time<br>for campus.</h1><p class="hero-intro">Find a workshop, meet your people, or try something new. Your next campus plan starts here.</p></div>
+    <div class="hero-note"><span class="note-topline">On your calendar</span><div class="note-date"><span>{{ today|date:"d" }}</span><div>{{ today|date:"F" }}<br>{{ today|date:"Y" }}</div></div><p>Good things happen<br>when we show up.</p><span class="note-foot">CampusGather / Philippine time</span></div>
+  </section>
+  <section aria-labelledby="events-heading">
+    <div class="section-heading"><div><p class="eyebrow">Find your next plan</p><h2 id="events-heading">What's happening</h2></div><p class="result-count">{{ page_obj.paginator.count }} event{{ page_obj.paginator.count|pluralize }}</p></div>
+    <form class="filter-bar" method="get" action="{% url 'event-list' %}" role="search">
+      <div class="filter-search"><label for="event-query">Search events</label><input id="event-query" name="q" type="search" value="{{ query }}" placeholder="Event, topic, or organization"></div>
+      <div class="filter-category"><label for="event-category">Category</label><select id="event-category" name="category"><option value="">All categories</option>{% for category in categories %}<option value="{{ category.pk }}"{% if category_id == category.pk|stringformat:'s' %} selected{% endif %}>{{ category.name }}</option>{% endfor %}</select></div>
+      <button class="button" type="submit">Find events</button>
+      {% if query or category_id %}<a class="filter-clear" href="{% url 'event-list' %}">Clear filters</a>{% endif %}
+    </form>
+    {% if events %}<div class="event-grid">{% for event in events %}{% include "events/includes/event_card.html" %}{% endfor %}</div>
+    {% else %}<div class="empty-state"><span class="empty-icon" aria-hidden="true">↗</span><h3>{% if query or category_id %}No events match your search{% else %}The noticeboard is ready{% endif %}</h3><p>{% if query or category_id %}Try a different search or view all campus events.{% else %}Published campus events will appear here. Check back for your next plan.{% endif %}</p>{% if query or category_id %}<a class="button button-secondary" href="{% url 'event-list' %}">View all events</a>{% elif is_organizer %}<a class="button" href="{% url 'resource-create' 'events' %}">Create an event</a>{% endif %}</div>{% endif %}
+    {% include "events/includes/pagination.html" %}
+  </section>
+{% endblock %}

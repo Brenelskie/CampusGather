@@ -69,6 +69,8 @@ class Event(models.Model):
         return self.status == self.Status.PUBLISHED and self.starts_at > timezone.now()
     def clean(self):
         errors = {}
+        if not self.pk and self.status != self.Status.DRAFT:
+            errors["status"] = "New events must start as drafts. Save the draft, then publish or cancel it."
         if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
             errors["ends_at"] = "End time must be after start time."
         if self.organization_id and self.venue_id and self.category_id:
@@ -131,7 +133,7 @@ class Registration(models.Model):
             if self.student_id != original.student_id:
                 errors["student"] = "A registration's student cannot be changed."
         if self.event_id and not self.event.registration_open:
-            errors["event"] = "Registration and note changes are open only before a published event starts. You can still cancel."
+            errors["__all__"] = "Registration and note changes are open only before a published event starts. You can still cancel."
         if errors:
             raise ValidationError(errors)
 

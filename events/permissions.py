@@ -27,5 +27,10 @@ def can_manage(user, obj):
         return False
     if is_admin(user):
         return True
-    owner_id = obj.owner_id if hasattr(obj, "owner_id") else (obj.organization.owner_id if hasattr(obj, "organization_id") else obj.event.organization.owner_id)
+    if hasattr(obj, "owner_id"):
+        owner_id = obj.owner_id
+    elif hasattr(obj, "organization_id"):
+        owner_id = obj.organization.owner_id
+    else:
+        owner_id = obj.event.organization.owner_id
     return owner_id == user.pk

@@ -19,10 +19,13 @@ def event_list(request):
     category_id = request.GET.get("category", "")
     if query:
         qs = qs.filter(Q(title__icontains=query) | Q(description__icontains=query) | Q(organization__name__icontains=query))
-    if category_id.isdigit():
-        qs = qs.filter(category_id=int(category_id))
+    if category_id:
+        if category_id.isascii() and category_id.isdecimal() and len(category_id) <= 19 and 0 < int(category_id) <= 9223372036854775807:
+            qs = qs.filter(category_id=int(category_id))
+        else:
+            qs = qs.none()
     categories = EventCategory.objects.filter(events__in=visible_events(request.user)).distinct()
-    page = Paginator(qs, 9).get_page(request.GET.get("page"))
+    page = Paginator(qs.order_by("starts_at", "pk"), 9).get_page(request.GET.get("page"))
     return render(request, "events/event_list.html", {"events": page, "page_obj": page, "query": query, "category_id": category_id, "categories": categories, "today": timezone.localdate()})
 
 def event_detail(request, pk):
@@ -42,7 +45,7 @@ def dashboard(request):
     resources = []
     for key, spec in RESOURCES.items():
         resources.append({"key": key, "label": spec["label"], "description": spec["description"], "count": resource_queryset(request.user, key).count()})
-    return render(request, "events/dashboard.html", {"events": events[:6], "event_count": events.count(), "published_count": events.filter(status="published").count(), "registration_count": Registration.objects.filter(event__in=events).count(), "resources": resources})
+    return render(request, "events/dashboard.html", {"events": events[:6], "event_count": events.count(), "published_count": events.filter(status=Event.Status.PUBLISHED).count(), "registration_count": Registration.objects.filter(event__in=events).count(), "resources": resources})
 
 def resource_spec(resource):
     if resource not in RESOURCES:
@@ -129,7 +132,7 @@ def registration_create(request, pk):
         return redirect("registration-detail", pk=existing.pk)
     form = RegistrationNoteForm(request.POST if request.method == "POST" else None)
     status = 200
-    if not event.registration_open:
+    if not event.registration_open and form.is_bound:
         form.add_error(None, "This event is not open for registration.")
     elif request.method == "POST" and form.is_valid():
         try:

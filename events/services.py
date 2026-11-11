@@ -1,5 +1,5 @@
 """Shared, short atomic writes used by both forms and REST endpoints."""
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied, ValidationError
 from django.db import IntegrityError, OperationalError, transaction
 from django.db.models.deletion import ProtectedError
 from django.http import Http404
@@ -61,6 +61,8 @@ def save_record(user, model, data, instance=None):
         raise Http404("This record no longer exists.") from exc
     except Event.DoesNotExist as exc:
         raise ValidationError({"event": "This event no longer exists."}) from exc
+    except ObjectDoesNotExist as exc:
+        raise ValidationError("A selected related record no longer exists. Please choose again.") from exc
     except IntegrityError as exc:
         if model is Registration and "events_registration.event_id, events_registration.student_id" in str(exc):
             raise ValidationError({"event": "You are already registered for this event."}) from exc

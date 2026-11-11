@@ -13,6 +13,8 @@ class ResourceForm(forms.ModelForm):
         if model in OWNED_MODELS and is_admin(user) and not self.instance.pk:
             self.fields["owner"] = forms.ModelChoiceField(queryset=get_user_model().objects.filter(Q(is_superuser=True) | Q(groups__name="Organizers")).distinct(), initial=user)
         if model is Event:
+            if not self.instance.pk:
+                self.fields["status"].choices = [(Event.Status.DRAFT, "Draft")]
             for name, related in [("organization", Organization), ("venue", Venue), ("category", EventCategory)]:
                 qs = related.objects.all()
                 if not is_admin(user):
@@ -23,7 +25,7 @@ class ResourceForm(forms.ModelForm):
             if self.instance.pk:
                 self.fields["organization"].disabled = True
         if model in (AgendaItem, Announcement, Registration):
-            self.fields["event"].queryset = managed_events(user) if model is not Registration else Event.objects.filter(status="published", starts_at__gt=timezone.now())
+            self.fields["event"].queryset = managed_events(user) if model is not Registration else Event.objects.filter(status=Event.Status.PUBLISHED, starts_at__gt=timezone.now())
             if self.instance.pk:
                 self.fields["event"].queryset = Event.objects.filter(pk=self.instance.event_id)
                 self.fields["event"].disabled = True

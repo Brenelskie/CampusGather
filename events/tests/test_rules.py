@@ -44,3 +44,13 @@ class RuleTests(TestCase):
             self.venue.latitude = value
             with self.assertRaises(ValidationError):
                 self.venue.full_clean()
+
+    def test_new_event_must_be_draft_before_publish_or_cancel(self):
+        data = {"organization": self.org, "venue": self.venue, "category": self.category, "title": "New event", "description": "New description", "starts_at": self.start, "ends_at": self.start + timedelta(hours=1)}
+        for state in ["published", "cancelled"]:
+            with self.assertRaises(ValidationError):
+                save_record(self.owner, Event, {**data, "status": state})
+        event = save_record(self.owner, Event, data)
+        self.assertEqual(event.status, "draft")
+        event = save_record(self.owner, Event, {"status": "published"}, event)
+        self.assertEqual(event.status, "published")
