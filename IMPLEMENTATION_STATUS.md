@@ -1,91 +1,167 @@
 # CampusGather implementation status
 
-Verified locally on 11 November 2026 using Python 3.13.5 on Windows. The application is built in `C:\Users\brene\Desktop\CampusGather`. No repository has been published and no hosted deployment is claimed.
+Updated **13 November 2026**, Windows, Python 3.13.5, at `C:\Users\brene\Desktop\CampusGather`. This is a local verification record. No GitHub publication or hosted deployment was performed for this improvement.
 
-## Completed milestones
+## Changes completed
 
-| Milestone | Result |
+- One consistent, keyboard-accessible **← Back** link on important student, organizer, administrator, account, form, error, native admin and browsable API pages. Discovery is the root and intentionally has no self-referencing Back link.
+- `events/navigation.py` validates bounded internal `return_to` origins using host/HTTPS/route/role/object checks. It preserves search/category/page context, provides deterministic parents, carries form origins, validates save redirects and returns to surviving lists after deletion. Authentication's `next` remains separate. API JSON/serializer inputs do not receive navigation fields.
+- Improved the existing weather client: configured timezone, saved-coordinate validation, separate availability states, diagnostic failure reasons, icons and attribution. Missing optional rain no longer discards valid temperatures/conditions; 0% stays valid. The existing endpoint, fields, 0–15-day window, 2-second connect/3-second read timeouts and 900-second success cache remain.
+- Reproduced and fixed malformed event-prefill and organizer-role user IDs causing server errors; these now return 404 without modifying records.
+- Fixed phone-width organizer-access table overflow by containing positioned screen-reader labels within the scrolling table region. Added the existing local icon to native admin and browsable API after a favicon 404.
+- Created four teaching guides and updated README navigation/troubleshooting.
+- Preserved all seven models, relationships, migrations, dependencies, event dates and domain records. No database reset, reseed or password reset.
+
+## Automated verification
+
+| Executed check | Result |
 |---|---|
-| Environment | Reused working `.venv`; installed pinned Django 5.2.19 LTS, DRF 3.18.3, requests 2.34.2, python-dotenv 1.2.4 |
-| Django foundation | Settings, URLs, authentication, static files, private local environment and initial migration |
-| Accounts and database | Student signup, session login/logout, administrator role assignment and exactly seven principal models |
-| Complete website | Responsive public discovery/search/filter, event details, organizer dashboard, six organizer CRUD resources, student registration CRUD, organizer roster, administrator registration management |
-| REST API | Seven collection/detail resources, GET/POST/PUT/PATCH/DELETE, session/CSRF, ownership, private registrations, immutable identities and useful errors |
-| Maps | Leaflet 1.9.4, OSM tiles/attribution, coordinate entry and click selection, safe text popups, fallback |
-| Weather | Saved venue coordinates, actual Manila event date, forecast offsets 0–15, daily Celsius range/rain/description, 15-minute success cache, graceful errors |
-| Handoff | Repeat-safe synthetic data, tests, README, ER diagram, API/Postman examples, walkthrough, demo, presentation and professor Q&A |
-
-## Final automated results
-
-| Check actually executed | Result |
-|---|---|
-| `python manage.py test --noinput` | **65 tests passed in 52.682 seconds; zero failures/errors** |
-| Focused review-fix suite (API/rules/seed/concurrency) | 38 tests passed in 31.969 seconds |
-| `python manage.py check` | No issues, zero silenced |
-| `python manage.py migrate --noinput` | Fresh local database migrated successfully |
-| `python manage.py migrate --check --noinput` | Passed; no unapplied migrations |
-| `python manage.py makemigrations --check --dry-run` | No changes detected |
-| `python manage.py collectstatic --dry-run --noinput --verbosity 0` | Passed |
+| Opening full-suite baseline | **65 passed in 55.560 seconds**, zero failures/errors |
+| Final full suite after all review fixes | **87 passed in 42.152 seconds**, zero failures/errors |
+| Improved full-suite checkpoint | **83 passed in 42.780 seconds**, zero failures/errors |
+| Navigation/weather/website/accounts/API checkpoint | 64 passed in 13.502 seconds |
+| Website/accounts/navigation after malformed-ID and ancestry fixes | 27 passed in 4.018 seconds |
+| Navigation/weather after simplification and icon changes | 29 passed in 2.752 seconds |
+| Navigation/weather after confirmed review fixes | 33 passed in 2.507 seconds; final full run also passed |
+| `manage.py check` | No issues; zero silenced |
+| `manage.py migrate --noinput` | No migrations to apply |
+| `manage.py migrate --check --noinput` | Passed; no unapplied migrations |
+| `manage.py makemigrations --check --dry-run` | No changes detected |
+| `manage.py collectstatic --dry-run --noinput --verbosity 0` | Passed |
 | `python -m pip check` | No broken requirements |
-| Django template compilation | All 24 templates loaded successfully |
-| JavaScript syntax | Both map scripts passed `node --check` |
-| Python syntax | All 43 Python files parsed during the simplification pass; final changed production files exercised by the full suite |
-| Seed rerun | Zero new users or domain records; existing data/passwords/roles preserved |
+| Python AST syntax | 46 project Python files passed |
+| Django template loading | All 30 templates passed |
+| `node --check` | Both map JavaScript files passed |
+| Original-test retention audit | All 65 original test methods remain; seven principal models remain |
+| `git diff --check` | Passed; LF/CRLF notices are informational |
 
-The suite covers all seven HTML and REST CRUD resources, authentication, CSRF, role/ownership restrictions, draft privacy, registration privacy/duplicates/notes/cancellation, administrator actions, schedule/coordinate validation, protected/cascading deletion, competing SQLite writes, mock weather failures/success/cache and sample-data preservation. Tests use a separate test database.
+Final review and post-review validation are recorded below. No standalone linter or static type checker is configured; neither is claimed as executed.
 
-There is no separately configured lint or static type-check command. Node was used only for browser/JavaScript verification; the application itself needs no Node runtime or npm dependencies.
+The 22 added methods cover navigation (13), weather (7) and malformed input (2). Original tests were not deleted. The existing malformed-weather test changed only where missing/null **optional rain** is intentionally accepted; separate positive cases prove that behavior, and invalid supplied rain remains rejected.
 
-## Errors found and corrected
+The suite executes all seven HTML and REST CRUD resources; signup/login/logout; session CSRF; administrator roles; organizer ownership; draft/registration privacy; immutable identities; schedule/coordinate validation; protected/cascading deletion; competing SQLite writes; seed preservation; weather parsing/cache/failures; and safe navigation. Django uses a separate test database.
 
-- First full run: 58 tests, one assertion failure and one page error. A search assertion mistook a category label for an event result; it now checks the actual result list. Closed-event registration GET attempted to add an error to an unbound form; it now renders the closed state safely.
-- Malformed category parameters were reproduced as Unicode conversion and oversized SQLite integer errors. They now produce an empty result safely. Event pagination now has explicit date/ID ordering.
-- Independent code review completed with nine perspectives. Its three confirmed findings were fixed: browsable form CSRF metadata is accepted without relaxing session/CSRF checks or unknown JSON fields; new user-created events must begin as drafts; sample data cannot enroll pre-existing student accounts or recreate cancelled registrations.
-- Five new review regressions were run before those fixes and all five failed for the expected reasons. They pass after the fixes. The agenda race test was strengthened and both write orderings are checked explicitly.
-- The completed review receipt is `20261111-143541-915c113b` in the local Codex temporary review artifacts. No confirmed finding remains unapplied. The review used local independent contexts; a separate-provider pass was unavailable.
+Regressions failed before the corresponding fixes, including rain, states/timezone/logs, navigation, malformed IDs and event-child ancestry. One interim URL-encoding assertion was adjusted for Django preserving `/` in query values, without changing the decoded destination. No unresolved automated failure remains at the current checkpoint. Expected warnings from mocked provider failures are not failures.
 
-## Actual browser and provider checks
+## Weather diagnosis: facts and limits
 
-Checked in Chromium through Playwright at desktop 1440×1000 and mobile 390×844:
+The old screenshot's generic message combined HTTP, JSON and payload failures without diagnostic logging. **Its exact historical failure cannot be established from the screenshot.**
 
-- Public event discovery and event detail rendered; desktop/mobile screenshots inspected.
-- Event detail, organizer dashboard and venue form measured a 390-pixel content width without horizontal overflow.
-- Student login preserved its return destination. Registration creation, attendance-note editing, POST cancellation and logout worked. Temporary test registration was removed.
-- A student visiting the organizer dashboard received the intended 403 page.
-- Organizer login/dashboard worked. Invalid latitude produced an accessible field error. Clicking the map filled both coordinates and placed a marker. Saving and deleting that temporary venue worked.
-- Event map loaded 12 OSM tiles with a marker and visible attribution. Blocking the Leaflet CDN produced the textual location fallback while event actions remained usable; the block was removed afterward.
-- Live Open-Meteo data appeared for the actual 13 November event date, with temperatures, rain probability and fetch time. The twenty-day example displayed the intended unavailable state. Network/payload failures and cache behavior are covered by mocked tests.
-- Tab showed the visible skip-link focus and Enter moved to main content.
-- The real browsable API HTML POST was reproduced failing before the CSRF fix, then retested successfully with HTTP 201 after restarting the server. The temporary API-created organization was removed.
-- A missing favicon discovered in the first browser run was corrected with a local SVG icon.
+On November 13, saved events 1 and 2 had valid coordinates and eligible Asia/Manila dates. Direct requests with the existing parameters returned **HTTP 200 for both**, and the **old parser accepted both**:
 
-Browser screenshots remain under ignored `output/playwright/`. Intentional 403/400 and simulated CDN 503 responses during negative tests are expected results, not remaining application errors.
+| Saved event/date | Dated live observation |
+|---|---|
+| Campus Discovery Workshop, November 13 | 26.4–29.3 °C, rain 47%, WMO 55; about 1.38 seconds |
+| Green Campus Meetup, November 16 | 24.6–29.8 °C, rain 87%, WMO 51; about 1.49 seconds |
 
-## Current local demo data and account setup
+The improved helper separately returned an available November 16 forecast for event 2 at **04:46 UTC / 12:46 Manila**: light drizzle, 24.6–29.8 °C, rain 87%. The browser displayed it around **12:54 Manila**, with the date, icon, fetch time and Open-Meteo/CC BY 4.0 attribution. These are dated real observations, not permanent values or mocked fixtures.
 
-| Model | Rows |
-|---|---:|
-| Organization | 1 |
-| Venue | 2 |
-| EventCategory | 2 |
-| Event | 5 |
-| AgendaItem | 5 |
-| Registration | 3 |
-| Announcement | 5 |
+During final browser verification around **13:41–13:43 Manila**, real requests for that event timed out. A separate request with longer diagnostic timeout bounds also raised `requests.exceptions.ReadTimeout`. The page correctly displayed the specific timeout message and retained its map, registration and navigation. Thus this run verifies both earlier live success and later graceful live failure; it does not claim uninterrupted provider availability. The application's existing timeout bounds were retained because the longer diagnostic probe did not restore connectivity. No substitute or fabricated weather was displayed.
 
-The three accounts are `demo_organizer`, `demo_student`, `demo_student2`. A random local demo password was stored only in ignored `.env` to load and browser-test the examples; no password is committed or printed. Choose your own login passwords using `manage.py changepassword demo_student` and `manage.py changepassword demo_organizer`. Create your private administrator with `manage.py createsuperuser`. There is no default administrator password.
+An independent parser defect was reproduced: missing/null optional rain discarded otherwise valid forecasts. That is fixed. New warnings distinguish timeout, connection, HTTP, JSON and payload failures without titles or attendee data. We do not claim missing rain caused the old screenshot, change providers, or increase timeouts without evidence.
 
-Use the existing `.venv\Scripts\python.exe` for these commands. The README contains the complete Windows setup and run sequence. The local URL is `http://127.0.0.1:8000/`.
+States: `available`, `past`, `out_of_range`, `invalid_location`, `temporarily_unavailable`. Today through fifteen days ahead is eligible (16 dates). Invalid/out-of-range/past cases skip HTTP; failures are not cached as forecasts. Cache keys include coordinates, date, timezone and fields; local-memory cache is per process.
 
-## Remaining manual checks and limits
+The November 16 example was already upcoming and eligible, so no seed/date change was needed. December 1 intentionally tests “not available yet” on November 13. Demo dates stay fixed and age; create a suitable synthetic event through the organizer pages when necessary.
 
-- Administrator workflows have automated coverage; create your own administrator and rehearse them before presenting.
-- A groupmate has not yet followed the README on a second computer. Real phones, other browser engines and a full screen-reader audit are not claimed.
-- Postman examples are documented; real authenticated HTTP behavior was tested using Django/APIClient and the browsable API rather than the Postman desktop application.
-- SQLite is the local classroom database. Brief competing writes can return a friendly retry response. Production scale/load testing was not performed.
-- Weather/CDN/tile availability depends on internet and third-party services. The cache is per process; forecasts are not guarantees, and far-future/past dates intentionally show unavailable.
-- Demo dates are fixed on first creation and eventually become past dates. Create fresh draft events rather than resetting the database.
-- Git is local on `codex/campusgather`. GitHub destination/account/visibility must be verified before publishing. No remote was configured or changed.
-- PWA, Docker, OAuth, AI features and hosted deployment remain future scope, as instructed. Production settings/hosting need their own deployment validation.
+## Actual browser and real HTTP checks
 
-The verified required local application is complete. These checks provide evidence for this version, not a claim that software can have no bugs.
+Chromium/Playwright, running local server, desktop **1440×1000** and phone **390×844**; screenshots visually inspected:
+
+- Search `Green` → event detail → focused Back + Enter restored `/?q=Green` and the search value.
+- Event page rendered one Back link, genuine weather, marker/attribution and eight loaded OSM tiles on phone. Page width and scroll width both measured 390.
+- Student session: My registrations → detail → edit-note form rendered with a live-detail Back link and list origin. Edit form had no phone overflow. Existing notes were not changed; create/update/cancel executed in automated tests.
+- Organizer session: dashboard, its six management links and venue list rendered. All resource CRUD and roster permissions executed in automated tests.
+- Administrator session: organizer-access and native admin rendered with correct Back links. Role-table page overflow was reproduced at 420 pixels, then measured at 390 after the positioned-container fix and fresh CSS. The table itself remains scrollable. Existing browsers may need Ctrl+F5 for fresh CSS.
+- Browsable API root/event collection rendered with Back destinations `/` and `/api/`, without phone page overflow.
+- Actual authenticated HTTP GETs for all seven API collections returned **200**, paginated JSON, and no navigation-field leakage.
+- API browser console contained zero errors/warnings. Native admin's default favicon 404 led to explicit references to the existing SVG icon.
+- After review fixes, the browser confirmed event Edit had identical Back/Cancel links to the originating event with its `Green` search origin; Cancel returned to that event and Back then restored `/?q=Green` and the search value. No event was saved or rescheduled during this check.
+
+The old setup-time demo password did not authenticate the existing demo student. No password was reset. Role UI checks used temporary local Django-authenticated sessions for existing accounts; this does **not** manually verify their current passwords. Valid/invalid password login, signup and POST logout passed automated tests. Temporary sessions/storage files are cleaned up after browser verification.
+
+Screenshots and diagnostics remain in ignored `output/`; browser snapshots in ignored `.playwright-cli/`. These are separate from committed source.
+
+## Independent review
+
+Required simplification completed on 282 changed production Python lines: reused Django's configured-timezone helper and removed three descriptive comments. Proof tests were protected; no broad restructuring.
+
+Actual `ce-code-review` completed with seven independent review contexts: correctness, testing, maintainability, security, reliability, adversarial and focused documentation correctness. Receipt **`20261113-130851-2246a1db`**, status `complete`, is under `C:\Users\brene\AppData\Local\Temp\compound-engineering-brene\ce-code-review\20261113-130851-2246a1db`. A different-provider CLI was unavailable; local adversarial review covered that lens. This review did not itself run Django/browser checks; those were run by the implementation orchestrator and recorded above.
+
+All three validated P2 findings were applied inline:
+
+- **#2:** Event-page edit/delete and inline agenda/announcement actions carry a separately validated numeric `event_parent`, retaining the flat filtered-list origin. Back/Cancel returns to the actual originating event. The hidden value is checked again on POST and matched to the authorized record's actual event; unrelated owned/private events and malformed values are rejected. Successful saves retain this context; successful deletion still uses a surviving list.
+- **#3:** Unnamed native admin catch-all routes are rejected before model lookup. Unknown admin destinations cannot crash the Back helper, and an unknown admin page returns 404.
+- **#4:** The real Requests JSON-decoding exception is caught before generic request failures. A real `requests.Response` containing malformed JSON now produces `invalid_json` diagnostics and the unreadable-response message.
+
+All three new regressions failed before their fixes. The post-fix focused run passed 33 tests and the final full run passed 87. A related additional regression reproduced an HTTP exception without an attached response causing an unbound-local error; the handler now safely logs an absent status and returns the temporary state. No confirmed review finding remains unapplied. A duplication-only maintenance suggestion was rejected because it had no present defect and extraction would add an unnecessary abstraction/import-cycle risk.
+
+## Teaching files
+
+| File | Contents |
+|---|---|
+| [Complete walkthrough](docs/CAMPUSGATHER_COMPLETE_WALKTHROUGH.md) | A–M source explanation; architecture/ER/weather diagrams; seven models/CRUD/API examples; eleven workflows; safe setup commands |
+| [Presentation guide](docs/CAMPUSGATHER_PRESENTATION_GUIDE.md) | 14:45 demonstration, roles, seven CRUD resources, safe cleanup and 66 answered questions |
+| [Student study guide](docs/CAMPUSGATHER_STUDENT_STUDY_GUIDE.md) | 17 lessons, each with code, explanation, analogy, terms, three answered questions, exercise and professor question |
+| [Quick reference](docs/CAMPUSGATHER_QUICK_REFERENCE.md) | Compact defense sheet |
+
+Lesson code excerpts and local links were statically checked against actual files. Exercises/scripts are rehearsal instructions, not a claim that a student or groupmate has completed them.
+
+## Exact delivery file manifest
+
+Python and static changes:
+
+```text
+accounts/views.py
+events/context_processors.py
+events/navigation.py (new)
+events/views.py
+events/weather.py
+events/tests/test_navigation.py (new)
+events/tests/test_weather.py
+events/tests/test_website.py
+static/css/site.css
+```
+
+Template changes:
+
+```text
+templates/base.html
+templates/accounts/roles.html
+templates/accounts/signup.html
+templates/admin/base_site.html (new)
+templates/errors/error.html
+templates/events/confirm_delete.html
+templates/events/dashboard.html
+templates/events/event_detail.html
+templates/events/includes/event_card.html
+templates/events/includes/back_navigation.html (new)
+templates/events/includes/back_navigation_style.html (new)
+templates/events/includes/return_field.html (new)
+templates/events/registration_detail.html
+templates/events/registration_form.html
+templates/events/registration_list.html
+templates/events/resource_detail.html
+templates/events/resource_form.html
+templates/events/resource_list.html
+templates/registration/login.html
+templates/rest_framework/api.html (new)
+templates/rest_framework/login.html (new)
+```
+
+Documentation: the four new teaching files linked above, updated `README.md` and this `IMPLEMENTATION_STATUS.md`. The earlier planning commit also added `docs/plans/2026-11-13-1232-fix-navigation-weather-teaching-plan.md`. Ignored diagnostic scripts, screenshots, test output and private environment/database files are not delivery source.
+
+## Preserved records and remaining manual work
+
+Current read-only counts: Organization **1**, Venue **2**, EventCategory **2**, Event **5**, AgendaItem **5**, Registration **4**, Announcement **5**. All were preserved. The November 11 record listed three registrations; four were already present at the opening browser check of this improvement, not created by a reseed.
+
+Before presenting:
+
+1. Read the quick reference, then study purpose/request flow, tables, roles, API, weather and maps in the study guide.
+2. Rehearse with disposable synthetic records and the guide's create/publish/register/cancel/delete order.
+3. Verify your passwords privately. If needed, deliberately use `manage.py changepassword <username>`; the seed never resets existing passwords. Have your administrator account ready.
+4. Recheck the chosen event date and internet shortly before demonstrating. Forecasts are not guarantees.
+
+Not verified here: second-computer setup, real phones, Safari/Firefox, a full screen-reader audit, Postman desktop, production configuration/hosting or load capacity. Mocked failures do not prove future provider uptime. Leaflet/OSM/Open-Meteo require internet. PWA, Docker, OAuth, AI and deployment remain outside this task.
+
+Work stays local on `codex/campusgather`; no remote destination changed. Verification is evidence for this version, not a promise that software can never have another defect.

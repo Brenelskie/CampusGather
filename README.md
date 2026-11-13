@@ -4,6 +4,8 @@ CampusGather is a Django campus event planner. Students discover events and mana
 
 The runtime uses Python, Django, Django REST Framework, SQLite, and server-rendered HTML. Leaflet displays venue maps with OpenStreetMap tiles. A server-side Open-Meteo client supplies a forecast for the event's date. Node.js is not required.
 
+For your project defense, start with the [quick reference](docs/CAMPUSGATHER_QUICK_REFERENCE.md), then work through the [student study guide](docs/CAMPUSGATHER_STUDENT_STUDY_GUIDE.md). The [complete walkthrough](docs/CAMPUSGATHER_COMPLETE_WALKTHROUGH.md) traces the actual source, and the [presentation guide](docs/CAMPUSGATHER_PRESENTATION_GUIDE.md) provides a timed demonstration and 66 questions with answers. Current verification evidence is in [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+
 ## Run on Windows with PowerShell
 
 Open this project folder in VS Code, then open its PowerShell terminal. These commands assume Python 3.13 is installed; the development interpreter is Python 3.13.5. Check the selected interpreter rather than relying on the default `py` version.
@@ -79,6 +81,12 @@ Draft events and their agenda/announcements are private to their organizer and a
 
 The six organizer resource names are `organizations`, `venues`, `categories`, `events`, `agenda-items`, and `announcements`. Registrations have their own student and administrator pages. All seven also have REST endpoints. HTML deletion uses a confirmation page and POST. The API uses DELETE. Session-authenticated API writes require CSRF protection.
 
+Important pages have a consistent **← Back** link near the top, including authentication, management, native admin and browsable API screens. It works without JavaScript. Links carry a bounded `return_to` origin so search/category/page context can survive forms. The server checks the destination's host, scheme, registered route, user access and record visibility; invalid or unsafe destinations use a sensible parent. After deletion it returns to a surviving list. `next` remains the separate sign-in continuation.
+
+Actions opened from an event page also carry an `event_parent` ID. The server verifies both access and the edited record's actual parent before using it for Back/Cancel; it cannot redirect to an arbitrary event. The event page still remembers the original filtered list. This metadata is used only by the HTML navigation flow.
+
+Weather uses the saved venue coordinates and the application's configured timezone (`Asia/Manila` here). It distinguishes past dates, dates beyond today plus fifteen days, invalid locations, temporary provider failures and usable forecasts. A missing rain percentage does not discard valid temperatures and conditions; zero still means 0%. Successful forecasts are cached for fifteen minutes, and provider failure reasons are logged without event titles or attendee data. The panel includes Open-Meteo/CC BY 4.0 attribution. See the status record for dated live evidence; a later request may differ.
+
 ## Check the project
 
 Run these from another terminal while the server is stopped, or while using its separate development database normally:
@@ -98,7 +106,8 @@ Common fixes:
 - **`no such table`:** run `manage.py migrate` from this folder before seeding or browsing.
 - **Organizer page returns 403:** an administrator must grant the `Organizers` group through `/accounts/roles/`.
 - **CSRF error:** use one hostname consistently, refresh the login/form page, and keep cookies enabled. Postman instructions are in [API examples](docs/api.md).
-- **Forecast unavailable:** check the event's Manila date. Only offsets zero through fifteen days are supported, and the provider must return the matching date. A twenty-day demo event should show an unavailable state.
+- **Forecast unavailable:** read the specific panel message. Check the event date, saved venue coordinates, internet connection and server logs. Only offsets zero through fifteen days are supported, and the provider must return the matching date. A twenty-day demo event intentionally shows “not available yet.” No API key is required. Rerunning the seed preserves old dates; create a new synthetic event through the organizer pages when examples become old.
+- **An updated page still looks unchanged:** use Ctrl+F5 to reload cached CSS, then confirm the terminal is serving this CampusGather folder.
 - **Port already in use:** run `manage.py runserver 8001` and use that port consistently in the browser and API client.
 
 ## Learn and share
@@ -111,6 +120,10 @@ The seven application models are Organization, Venue, EventCategory, Event, Agen
 - [Code walkthrough, guided stages, and exercises](docs/walkthrough.md)
 - [Presentation outline and professor questions](docs/presentation.md)
 - [Requirements and verification checklist](docs/requirements-checklist.md)
+- [Complete source walkthrough (A–M)](docs/CAMPUSGATHER_COMPLETE_WALKTHROUGH.md)
+- [Presentation script and 66 defense questions](docs/CAMPUSGATHER_PRESENTATION_GUIDE.md)
+- [Personal study guide: 17 practical lessons](docs/CAMPUSGATHER_STUDENT_STUDY_GUIDE.md)
+- [Defense quick reference](docs/CAMPUSGATHER_QUICK_REFERENCE.md)
 
 For group work, share the verified repository URL through the intended owner, then have each member clone it and follow the setup above. No published repository or deployment URL is claimed here. Each member creates their own `.venv`, `.env`, SQLite database, and local accounts. Do not share these generated files or real credentials. Commit source, migrations, dependency pins, and `.env.example`.
 
