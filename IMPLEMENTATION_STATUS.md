@@ -1,6 +1,21 @@
 # CampusGather implementation status
 
-Updated **13 November 2026**, Windows, Python 3.13.5, at `C:\Users\brene\Desktop\CampusGather`. This is a local verification record. No GitHub publication or hosted deployment was performed for this improvement.
+Updated **13 November 2026**. Development remains at `C:\Users\brene\Desktop\CampusGather`, Windows, Python 3.13.5. Source is now published to [Brenelskie/CampusGather](https://github.com/Brenelskie/CampusGather), and [CampusGather is live on PythonAnywhere](https://bren11.pythonanywhere.com/). The publication record below supplements the earlier local implementation and review evidence.
+
+## Publication verification — 13 November 2026
+
+- Created the public GitHub repository under **Brenelskie**, pushed `main`, and verified the remote commit. The deployed application code is at **`3d2ced5`**; subsequent documentation commits do not change its behavior.
+- Replaced the served Hangarin site with CampusGather on **Bren11.pythonanywhere.com**, as authorized. Preserved Hangarin's source/environment and created a private consistent SQLite backup, WSGI backup and rollback path record before switching.
+- Cloned the public source into `/home/Bren11/CampusGather`, installed the pinned requirements in a separate Python 3.13 environment, generated a new server-only secret key, disabled debug, and configured the exact allowed hostname and HTTPS CSRF origin. Private settings and the fresh hosted database were not uploaded from local development or committed to Git.
+- Hosted `check`, initial migrations, unapplied-migration check, migration drift check, `collectstatic` and `pip check` passed. Imported the WSGI application successfully before switching paths. Set the source/working/virtualenv/static mappings to CampusGather, enabled HTTPS redirects, renewed the website until **13 December 2026**, and reloaded it.
+- Created fresh synthetic review data: Organization **1**, Venue **2**, EventCategory **2**, Event **5**, AgendaItem **5**, Registration **3**, Announcement **5**. Four events are public; the fifth is an organizer's private draft. Demo credentials remain private. No administrator was seeded; the owner creates one by entering a password privately using [the hosting guide](docs/deployment.md).
+- **18 public HTTP checks passed**: discovery, login, signup, CSS/JS/icon, API root and six public API collections; unauthenticated registrations returned the intended 403, a private draft returned 404, organizer/role pages required login, and HTTP redirected to HTTPS.
+- Hosted Django client smoke checks used the deployed production settings/database and real demo passwords internally: CSRF-protected login POST succeeded for student and organizer; all seven API collections were accessible to those authenticated roles; student registration/draft privacy, organizer dashboard/event management/roster, role-management denial, CSRF rejection and secure cookies passed. This is a hosted Django-client check, separate from public HTTP and browser observations.
+- Live browser checks verified search, keyboard Back preserving `?q=Green`, login validation, signup, a venue marker and **six loaded OSM tiles**. On the November 18 sample event, real Open-Meteo data displayed **25.4–29.8 °C**, **93% rain**, moderate drizzle, fetched around **14:39 Manila**. This is a dated real observation, not a fixture or uptime guarantee.
+- A phone-width check exposed joined words where the account headings' line breaks were hidden by CSS. Added one space to each of the signup and login headings. Browser verification confirmed the correct text at narrow width with equal page/scroll widths; all **17 account/navigation tests** passed (4 account tests and 13 navigation tests). The earlier full **87-test** run below predates this presentation-only fix. No permanent whitespace-only test was added.
+- The two-template diff received a lite correctness review, no findings, receipt **`20261113-145139-0fc57fc0`** in the local temporary review directory. No reviewer agents were dispatched for those two spaces. The prior independent review below covers the substantial implementation.
+
+The public repository contains source and documentation. `.env`, databases, virtual environments, static build output, logs, private browser state, screenshots and test output remain excluded. Provider attribution remains visible. Owner administrator setup, second-computer setup, a real-phone test, other browser engines and hosting load capacity remain unverified.
 
 ## Changes completed
 
@@ -153,7 +168,7 @@ Documentation: the four new teaching files linked above, updated `README.md` and
 
 ## Preserved records and remaining manual work
 
-Current read-only counts: Organization **1**, Venue **2**, EventCategory **2**, Event **5**, AgendaItem **5**, Registration **4**, Announcement **5**. All were preserved. The November 11 record listed three registrations; four were already present at the opening browser check of this improvement, not created by a reseed.
+Development database read-only counts at the local improvement checkpoint: Organization **1**, Venue **2**, EventCategory **2**, Event **5**, AgendaItem **5**, Registration **4**, Announcement **5**. All were preserved. The November 11 record listed three registrations; four were already present at the opening browser check of this improvement, not created by a reseed. The fresh hosted dataset is recorded separately above.
 
 Before presenting:
 
@@ -162,6 +177,6 @@ Before presenting:
 3. Verify your passwords privately. If needed, deliberately use `manage.py changepassword <username>`; the seed never resets existing passwords. Have your administrator account ready.
 4. Recheck the chosen event date and internet shortly before demonstrating. Forecasts are not guarantees.
 
-Not verified here: second-computer setup, real phones, Safari/Firefox, a full screen-reader audit, Postman desktop, production configuration/hosting or load capacity. Mocked failures do not prove future provider uptime. Leaflet/OSM/Open-Meteo require internet. PWA, Docker, OAuth, AI and deployment remain outside this task.
+Not verified here: second-computer setup, real phones, Safari/Firefox, a full screen-reader audit, Postman desktop or hosting load capacity. Production deployment checks are recorded above. Mocked failures do not prove future provider uptime. Leaflet/OSM/Open-Meteo require internet. PWA, Docker, OAuth and AI features remain outside this task.
 
-Work stays local on `codex/campusgather`; no remote destination changed. Verification is evidence for this version, not a promise that software can never have another defect.
+Local work remains on `codex/campusgather`, published to GitHub `main` and deployed on the live site. Verification is evidence for this version, not a promise that software can never have another defect.

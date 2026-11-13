@@ -4,6 +4,14 @@ CampusGather is a Django campus event planner. Students discover events and mana
 
 The runtime uses Python, Django, Django REST Framework, SQLite, and server-rendered HTML. Leaflet displays venue maps with OpenStreetMap tiles. A server-side Open-Meteo client supplies a forecast for the event's date. Node.js is not required.
 
+## Try CampusGather
+
+- [Live website](https://bren11.pythonanywhere.com/)
+- [GitHub repository](https://github.com/Brenelskie/CampusGather)
+- [Hosting, administrator setup, and update guide](docs/deployment.md)
+
+Visitors can browse the synthetic sample events. Choose **Join CampusGather** to create your own student account and try registration. Organizer access is assigned by an administrator; account passwords are kept private. The hosted database is separate from each groupmate's local database.
+
 For your project defense, start with the [quick reference](docs/CAMPUSGATHER_QUICK_REFERENCE.md), then work through the [student study guide](docs/CAMPUSGATHER_STUDENT_STUDY_GUIDE.md). The [complete walkthrough](docs/CAMPUSGATHER_COMPLETE_WALKTHROUGH.md) traces the actual source, and the [presentation guide](docs/CAMPUSGATHER_PRESENTATION_GUIDE.md) provides a timed demonstration and 66 questions with answers. Current verification evidence is in [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
 ## Run on Windows with PowerShell
@@ -125,8 +133,8 @@ The seven application models are Organization, Venue, EventCategory, Event, Agen
 - [Personal study guide: 17 practical lessons](docs/CAMPUSGATHER_STUDENT_STUDY_GUIDE.md)
 - [Defense quick reference](docs/CAMPUSGATHER_QUICK_REFERENCE.md)
 
-For group work, share the verified repository URL through the intended owner, then have each member clone it and follow the setup above. No published repository or deployment URL is claimed here. Each member creates their own `.venv`, `.env`, SQLite database, and local accounts. Do not share these generated files or real credentials. Commit source, migrations, dependency pins, and `.env.example`.
+For group work, share the repository and live website links above. Each member can clone the repository and follow the Windows setup to create their own `.venv`, `.env`, SQLite database, and local accounts. Do not share these generated files or real credentials. Commit source, migrations, dependency pins, and `.env.example`.
 
 Use small branches such as `git switch -c feature/event-copy`, inspect `git diff`, and commit only the intended files with a message describing the behavior changed. Open a pull request and ask a groupmate to run the focused check and explain the change before merging. A useful first exercise is a small event-page copy edit with a screenshot and a reviewer comment.
 
-This version does not implement hosted deployment, a PWA, Docker packaging, OAuth, payments, AI features, or attendance QR codes. Confirm any additional course requirements before extending the scope.
+This version is hosted on PythonAnywhere. It does not implement a PWA, Docker packaging, OAuth, payments, AI features, or attendance QR codes. Confirm any additional course requirements before extending the scope.
