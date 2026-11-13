@@ -177,16 +177,15 @@ class ForecastTests(SimpleTestCase):
         for field in valid["daily"]:
             missing = deepcopy(valid)
             del missing["daily"][field]
-            cases.append(missing)
             null_array = deepcopy(valid)
             null_array["daily"][field] = None
-            cases.append(null_array)
             empty_array = deepcopy(valid)
             empty_array["daily"][field] = []
             cases.append(empty_array)
             null_value = deepcopy(valid)
             null_value["daily"][field] = [None]
-            cases.append(null_value)
+            if field != "precipitation_probability_max":
+                cases.extend([missing, null_array, null_value])
         unequal = deepcopy(valid)
         unequal["daily"]["temperature_2m_max"].append(32)
         cases.append(unequal)
@@ -195,6 +194,92 @@ class ForecastTests(SimpleTestCase):
             with self.subTest(case=index):
                 self.response.json.return_value = payload
                 self.assert_unavailable(forecast_for_event(self.event))
+
+    def test_missing_optional_rain_keeps_real_temperature_and_condition(self):
+        for rain in ("missing", None, [None]):
+            with self.subTest(rain=rain):
+                cache.clear()
+                payload = self.payload(self.target)
+                if rain == "missing":
+                    del payload["daily"]["precipitation_probability_max"]
+                else:
+                    payload["daily"]["precipitation_probability_max"] = rain
+                self.response.json.return_value = payload
+                result = forecast_for_event(self.event)
+                self.assertTrue(result["available"])
+                self.assertIsNone(result["rain_probability"])
+                self.assertEqual((result["temp_min"], result["temp_max"]), (24.2, 31.6))
+                self.assertEqual(result["description"], "Partly cloudy")
+
+    def test_invalid_saved_coordinates_are_distinct_and_skip_cache_and_network(self):
+        for latitude, longitude in [(None, 118.7), (float("nan"), 118.7), (float("inf"), 118.7), (True, 118.7), (91, 118.7), (9.7, 181), (9.7, "118.7")]:
+            with self.subTest(latitude=latitude, longitude=longitude):
+                self.event.venue.latitude = latitude
+                self.event.venue.longitude = longitude
+                with patch("events.weather.cache.get") as lookup:
+                    result = forecast_for_event(self.event)
+                self.assertEqual(result["state"], "invalid_location")
+                self.assert_unavailable(result)
+                lookup.assert_not_called()
+        self.get.assert_not_called()
+
+    def test_available_past_and_future_states_include_appropriate_presentation(self):
+        result = forecast_for_event(self.event)
+        self.assertEqual(result["state"], "available")
+        self.assertTrue(result["icon"])
+        for offset, state in [(-1, "past"), (16, "out_of_range")]:
+            self.event.starts_at = self.now + timedelta(days=offset)
+            result = forecast_for_event(self.event)
+            self.assertEqual(result["state"], state)
+            self.assert_unavailable(result)
+
+    def test_failure_diagnostics_distinguish_timeout_http_and_invalid_payload(self):
+        with self.assertLogs("events.weather", level="WARNING") as captured:
+            self.get.side_effect = requests.Timeout("simulated provider timeout")
+            timeout_result = forecast_for_event(self.event)
+            self.get.side_effect = None
+            self.response.status_code = 429
+            self.response.raise_for_status.side_effect = requests.HTTPError(response=self.response)
+            http_result = forecast_for_event(self.event)
+            self.response.raise_for_status.side_effect = None
+            self.response.json.return_value = {"daily": {}}
+            invalid_result = forecast_for_event(self.event)
+        for result in (timeout_result, http_result, invalid_result):
+            self.assertEqual(result["state"], "temporarily_unavailable")
+            self.assert_unavailable(result)
+        self.assertEqual(timeout_result["reason"], "timeout")
+        self.assertEqual(http_result["reason"], "http_error")
+        self.assertEqual(invalid_result["reason"], "invalid_payload")
+        log_text = " ".join(captured.output)
+        self.assertIn("429", log_text)
+        self.assertNotIn(self.event.title, log_text)
+
+    @override_settings(TIME_ZONE="UTC")
+    def test_configured_timezone_is_used_in_request_and_target_date(self):
+        self.event.starts_at = datetime(2026, 11, 11, 17, tzinfo=datetime_timezone.utc)
+        self.response.json.return_value = self.payload(date(2026, 11, 11))
+        result = forecast_for_event(self.event)
+        self.assertEqual(result["date"], date(2026, 11, 11))
+        self.assertEqual(self.get.call_args.kwargs["params"]["timezone"], "UTC")
+
+    def test_real_requests_json_decode_error_has_specific_diagnostics(self):
+        response = requests.Response()
+        response.status_code = 200
+        response._content = b"not valid JSON"
+        self.get.return_value = response
+        with self.assertLogs("events.weather", level="WARNING") as captured:
+            result = forecast_for_event(self.event)
+        self.assert_unavailable(result)
+        self.assertEqual(result["reason"], "invalid_json")
+        self.assertIn("unreadable", result["message"])
+        self.assertIn("invalid_json", " ".join(captured.output))
+
+    def test_http_error_without_response_does_not_crash_event_forecast(self):
+        self.get.side_effect = requests.HTTPError("No response attached")
+        with self.assertLogs("events.weather", level="WARNING"):
+            result = forecast_for_event(self.event)
+        self.assert_unavailable(result)
+        self.assertEqual(result["reason"], "http_error")
 
     def test_absent_or_malformed_event_date_never_falls_back_to_today(self):
         for day in ("2026-11-11", "2026-02-30", "20261113", None):

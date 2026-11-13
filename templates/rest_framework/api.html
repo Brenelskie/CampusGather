@@ -1,0 +1,5 @@
+{% extends "rest_framework/base.html" %}
+{% load static %}
+{% block meta %}{{ block.super }}<link rel="icon" href="{% static 'icon.svg' %}" type="image/svg+xml">{% endblock %}
+{% block style %}{{ block.super }}{% include "events/includes/back_navigation_style.html" %}{% endblock %}
+{% block breadcrumbs %}{% include "events/includes/back_navigation.html" %}{{ block.super }}{% endblock %}

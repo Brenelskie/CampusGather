@@ -145,6 +145,21 @@ class WebsiteTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(list(response.context["events"]), [])
 
+    def test_malformed_event_prefill_returns_not_found(self):
+        self.client.force_login(self.owner)
+        for value in ["²", "not-an-id", "9" * 100]:
+            with self.subTest(value=value):
+                response = self.client.get(reverse("resource-create", args=["agenda-items"]), {"event": value})
+                self.assertEqual(response.status_code, 404)
+
+    def test_malformed_role_user_id_returns_not_found_without_changes(self):
+        self.client.force_login(self.admin)
+        for value in ["²", "not-an-id", "9" * 100]:
+            with self.subTest(value=value):
+                response = self.client.post(reverse("roles"), {"user_id": value, "action": "grant"})
+                self.assertEqual(response.status_code, 404)
+        self.assertFalse(self.student.groups.exists())
+
     def test_admin_management_and_role_changes(self):
         registration = Registration.objects.create(event=self.event, student=self.student)
         self.client.force_login(self.admin)

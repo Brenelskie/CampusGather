@@ -1,0 +1,5 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrahead %}{{ block.super }}<link rel="icon" href="{% static 'icon.svg' %}" type="image/svg+xml">{% endblock %}
+{% block extrastyle %}{{ block.super }}{% include "events/includes/back_navigation_style.html" %}{% endblock %}
+{% block pretitle %}{% include "events/includes/back_navigation.html" %}{{ block.super }}{% endblock %}

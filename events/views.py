@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 from .forms import form_for, RegistrationNoteForm
 from .models import Event, EventCategory, Registration
+from .navigation import saved_detail_url, surviving_list_url
 from .permissions import can_manage, is_admin, is_organizer, managed_events, visible_events
 from .resources import RESOURCES
 from .services import OWNED_MODELS, FIELDS, ProtectedDeletion, TemporarilyBusy, delete_record, save_record
@@ -90,15 +91,18 @@ def resource_form(request, resource, pk=None):
     spec = resource_spec(resource)
     instance = get_object_or_404(resource_queryset(request.user, resource), pk=pk) if pk else None
     initial = {}
-    if request.GET.get("event", "").isdigit() and "event" in FIELDS[spec["model"]]:
-        initial["event"] = get_object_or_404(managed_events(request.user), pk=request.GET["event"])
+    if request.GET.get("event") and "event" in FIELDS[spec["model"]]:
+        try:
+            initial["event"] = get_object_or_404(managed_events(request.user), pk=request.GET["event"])
+        except (ValueError, OverflowError) as exc:
+            raise Http404 from exc
     form = form_for(spec["model"])(request.POST if request.method == "POST" else None, instance=instance, initial=initial, user=request.user)
     status = 200
     if request.method == "POST" and form.is_valid():
         try:
             obj = save_record(request.user, spec["model"], form.cleaned_data, instance)
             messages.success(request, f"{spec['singular'].capitalize()} saved.")
-            return redirect("resource-detail", resource=resource, pk=obj.pk)
+            return redirect(saved_detail_url(request, reverse("resource-detail", kwargs={"resource": resource, "pk": obj.pk})))
         except (ValidationError, TemporarilyBusy) as exc:
             add_errors(form, exc)
             if isinstance(exc, TemporarilyBusy):
@@ -118,7 +122,7 @@ def delete_page(request, obj, return_url, extra=None):
         try:
             delete_record(request.user, obj)
             messages.success(request, "Record removed.")
-            return redirect(return_url)
+            return redirect(surviving_list_url(request, return_url))
         except (ProtectedDeletion, TemporarilyBusy) as exc:
             error = str(exc)
             status = 409 if isinstance(exc, ProtectedDeletion) else 503
@@ -129,7 +133,7 @@ def registration_create(request, pk):
     event = get_object_or_404(visible_events(request.user), pk=pk)
     existing = event.registrations.filter(student=request.user).first()
     if existing:
-        return redirect("registration-detail", pk=existing.pk)
+        return redirect(saved_detail_url(request, reverse("registration-detail", kwargs={"pk": existing.pk})))
     form = RegistrationNoteForm(request.POST if request.method == "POST" else None)
     status = 200
     if not event.registration_open and form.is_bound:
@@ -138,7 +142,7 @@ def registration_create(request, pk):
         try:
             registration = save_record(request.user, Registration, {"event": event, **form.cleaned_data})
             messages.success(request, "You're registered. See you there!")
-            return redirect("registration-detail", pk=registration.pk)
+            return redirect(saved_detail_url(request, reverse("registration-detail", kwargs={"pk": registration.pk})))
         except (ValidationError, TemporarilyBusy) as exc:
             add_errors(form, exc)
             if isinstance(exc, TemporarilyBusy):
@@ -172,7 +176,7 @@ def registration_edit(request, pk, admin_mode=False):
         try:
             save_record(request.user, Registration, form.cleaned_data, obj)
             messages.success(request, "Attendance note saved.")
-            return redirect("admin-registration-detail" if admin_mode else "registration-detail", pk=obj.pk)
+            return redirect(saved_detail_url(request, reverse("admin-registration-detail" if admin_mode else "registration-detail", kwargs={"pk": obj.pk})))
         except (ValidationError, TemporarilyBusy) as exc:
             add_errors(form, exc)
             if isinstance(exc, TemporarilyBusy):
